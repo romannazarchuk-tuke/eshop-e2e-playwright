@@ -5,9 +5,9 @@ built as a small but scalable test automation framework: Page Object Model with 
 component, custom fixtures, data-driven tests backed by a validated JSON file, and a GitHub Actions
 pipeline that publishes the Playwright HTML report to GitHub Pages.
 
-[![E2E tests](https://github.com/<OWNER>/<REPO>/actions/workflows/e2e.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/e2e.yml)
+[![E2E tests](https://github.com/romannazarchuk-tuke/eshop-e2e-playwright/actions/workflows/e2e.yml/badge.svg)](https://github.com/romannazarchuk-tuke/eshop-e2e-playwright/actions/workflows/e2e.yml)
 
-Latest test report: https://<OWNER>.github.io/<REPO>/
+Latest test report: https://romannazarchuk-tuke.github.io/eshop-e2e-playwright/
 
 ## Tech stack
 
@@ -169,7 +169,7 @@ cancelled or no report was produced (for example, lint failed before the tests r
 
 Where to find the report:
 
-- Latest `main` run: https://<OWNER>.github.io/<REPO>/
+- Latest `main` run: https://romannazarchuk-tuke.github.io/eshop-e2e-playwright/
 - Any run (including pull requests): the `playwright-report` artifact on the run's summary page.
   Download it, unzip it and run `npx playwright show-report <unzipped-folder>`.
 
