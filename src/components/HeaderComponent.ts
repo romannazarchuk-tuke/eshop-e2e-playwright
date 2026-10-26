@@ -18,6 +18,11 @@ export class HeaderComponent {
     this.cartQuantity = this.cartLink.locator('.cart-qty');
   }
 
+  /** The counter renders the total quantity in parentheses, e.g. "(2)". */
+  cartQuantityText(quantity: number): string {
+    return `(${quantity})`;
+  }
+
   async searchFor(term: string): Promise<void> {
     await this.searchInput.fill(term);
     await this.searchButton.click();

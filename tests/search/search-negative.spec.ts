@@ -25,7 +25,7 @@ test.describe('Negative search', () => {
       });
 
       await test.step('Verify cart is empty', async () => {
-        await expect(searchResultsPage.header.cartQuantity).toHaveText('(0)');
+        await expect(searchResultsPage.header).toHaveCartQuantity(0);
         await searchResultsPage.header.openCart();
         await cartPage.expectLoaded();
         await expect(cartPage.emptyCartMessage).toBeVisible();

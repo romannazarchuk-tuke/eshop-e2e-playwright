@@ -22,7 +22,7 @@ test.describe('Add to cart', () => {
         const price = await searchResultsPage.getTilePrice(expected.productName);
         expect(price).toBe(expected.unitPrice);
         await searchResultsPage.addToCart(expected.productName);
-        await expect(searchResultsPage.header.cartQuantity).toHaveText('(1)');
+        await expect(searchResultsPage.header).toHaveCartQuantity(1);
         return price;
       });
 
@@ -33,7 +33,7 @@ test.describe('Add to cart', () => {
 
       await test.step('Verify cart contents', async () => {
         await expect(cartPage.lineItem(expected.productName)).toBeVisible();
-        await expect(cartPage.header.cartQuantity).toHaveText('(1)');
+        await expect(cartPage.header).toHaveCartQuantity(1);
 
         // The cart is server-rendered, so once the row is visible a single read is stable.
         // Prices need numeric normalization, which a text assertion cannot do.
