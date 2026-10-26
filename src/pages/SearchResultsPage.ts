@@ -5,6 +5,8 @@ import { BasePage } from './BasePage';
 interface AddToCartResponse {
   success?: boolean;
   message?: string;
+  /** Returned instead of `success` when the product needs options chosen on its own page. */
+  redirect?: string;
 }
 
 export type SearchFeedbackType = 'noResults' | 'warning';
@@ -60,7 +62,25 @@ export class SearchResultsPage extends BasePage {
     if (!response.ok()) {
       throw new Error(`Adding "${productName}" to cart failed with HTTP ${response.status()}`);
     }
-    const body = (await response.json()) as AddToCartResponse;
+    let body: AddToCartResponse;
+    try {
+      body = (await response.json()) as AddToCartResponse;
+    } catch (error) {
+      // On a redirect the page navigates away and Chromium may discard the body before it is read.
+      const reason = error instanceof Error ? error.message.split('\n')[0] : String(error);
+      throw new Error(
+        `Could not read the add-to-cart response for "${productName}" (${reason}). ` +
+          `The page is now at ${this.page.url()}; products with required attributes ` +
+          `redirect to their own page instead of being added.`,
+        { cause: error },
+      );
+    }
+    if (body.redirect) {
+      throw new Error(
+        `"${productName}" cannot be added from search results: the shop redirects to ` +
+          `${body.redirect} to choose required attributes. Use a product without attributes.`,
+      );
+    }
     if (body.success !== true) {
       throw new Error(
         `Adding "${productName}" to cart was rejected: ${body.message ?? 'no message returned'}`,
