@@ -20,6 +20,7 @@ test.describe('Add to cart', () => {
 
       const tilePrice = await test.step('Add product to cart from search results', async () => {
         const price = await searchResultsPage.getTilePrice(expected.productName);
+        expect(price).toBe(expected.unitPrice);
         await searchResultsPage.addToCart(expected.productName);
         await expect(searchResultsPage.header.cartQuantity).toHaveText('(1)');
         return price;
@@ -38,9 +39,8 @@ test.describe('Add to cart', () => {
         // Prices need numeric normalization, which a text assertion cannot do.
         const lineItems = await cartPage.getLineItems();
         expect(lineItems).toEqual([
-          { name: expected.productName, unitPrice: expected.unitPrice, quantity: 1 },
+          { name: expected.productName, unitPrice: tilePrice, quantity: 1 },
         ]);
-        expect(tilePrice).toBe(expected.unitPrice);
       });
     });
   }

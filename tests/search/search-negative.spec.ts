@@ -1,14 +1,5 @@
-import type { Locator } from '@playwright/test';
-import { negativeSearchCases, type NegativeSearchCase } from '@src/data/testData';
+import { negativeSearchCases } from '@src/data/testData';
 import { expect, test } from '@src/fixtures/test';
-import type { SearchResultsPage } from '@src/pages/SearchResultsPage';
-
-type MessageType = NegativeSearchCase['expected']['messageType'];
-
-const messageLocators: Record<MessageType, (page: SearchResultsPage) => Locator> = {
-  noResults: (page) => page.noResultsMessage,
-  warning: (page) => page.warningMessage,
-};
 
 test.describe('Negative search', () => {
   for (const { id, searchTerm, expected } of negativeSearchCases) {
@@ -27,8 +18,9 @@ test.describe('Negative search', () => {
       });
 
       await test.step('Verify search feedback', async () => {
-        const message = messageLocators[expected.messageType](searchResultsPage);
-        await expect(message).toHaveText(expected.message);
+        await expect(searchResultsPage.searchFeedback(expected.messageType)).toHaveText(
+          expected.message,
+        );
         await expect(searchResultsPage.productTiles).toHaveCount(0);
       });
 

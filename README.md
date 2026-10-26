@@ -185,11 +185,19 @@ Where to find the report:
   declare what they need (`async ({ homePage, cartPage }) => ...`) and never construct page
   objects themselves.
 - **Data-driven tests.** One test definition per scenario, one generated test per data case.
-- **Locator strategy.** Role-based locators (`getByRole`) scoped to a container, with
-  `exact: true` for product names. The single CSS exception is the header search input, which
-  has no label or placeholder, so it is reached through its `.search-box` container. Remaining
-  CSS selectors read values from the cart and tile markup where no accessible role exists.
-  No XPath, no index-based selectors, no fixed waits.
+- **Locator strategy.** Interactive elements are located by role (`getByRole`), with
+  `exact: true` for product names. CSS is used only where the markup offers no accessible
+  alternative:
+  - to scope locators to a container: `.search-box`, `.header-links`, `.product-item`,
+    `table.cart`;
+  - for elements without an accessible role or name: search messages (`strong.result`,
+    `strong.warning`), the notification bar, prices, the cart quantity input and the cart
+    product name.
+
+  The most notable case is the header search input: it has no label or placeholder, so it is
+  reached as the only textbox inside `.search-box`. No XPath, no index-based selectors, no fixed
+  waits.
+
 - **Test isolation.** Every test runs in a fresh browser context. The guest cart is
   cookie-based, so each test starts with an empty cart and tests can run in parallel and in any
   order.
@@ -209,9 +217,11 @@ Where to find the report:
   immediately. On CI, 2 retries absorb slow responses of the shared public server and traces
   are recorded on the first retry; workers are fixed at 2 to match the runner's CPUs and to
   avoid overloading the demo server.
-- **Typed `messageType` to locator map.** The negative test selects the message locator through
-  a `Record<MessageType, ...>` instead of an if/else chain. Adding a message type to the schema
-  without adding it to the map is a compile error.
+- **Typed search feedback lookup.** `SearchResultsPage.searchFeedback(type)` maps a
+  `SearchFeedbackType` to its locator through a `Record`, so the negative test has no if/else
+  chain and future tests reuse the same lookup. The page object defines its own union type
+  instead of importing from the data layer; adding a `messageType` to the schema without
+  supporting it in the page object is a compile error at the call site.
 - **`toEqual` on cart line items.** The cart is server-rendered, so after the row is visible a
   single read is stable. One `toEqual` checks that there is exactly one line item and its name,
   numeric price and quantity, and shows a complete diff on failure. Visibility of the row and

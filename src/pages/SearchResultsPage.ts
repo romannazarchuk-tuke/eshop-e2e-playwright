@@ -7,6 +7,8 @@ interface AddToCartResponse {
   message?: string;
 }
 
+export type SearchFeedbackType = 'noResults' | 'warning';
+
 export class SearchResultsPage extends BasePage {
   protected readonly path = '/search';
 
@@ -15,6 +17,7 @@ export class SearchResultsPage extends BasePage {
   readonly noResultsMessage: Locator;
   readonly warningMessage: Locator;
   readonly addedToCartNotification: Locator;
+  private readonly feedbackMessages: Record<SearchFeedbackType, Locator>;
 
   constructor(page: Page) {
     super(page);
@@ -23,6 +26,14 @@ export class SearchResultsPage extends BasePage {
     this.noResultsMessage = page.locator('strong.result');
     this.warningMessage = page.locator('strong.warning');
     this.addedToCartNotification = page.locator('#bar-notification.success');
+    this.feedbackMessages = {
+      noResults: this.noResultsMessage,
+      warning: this.warningMessage,
+    };
+  }
+
+  searchFeedback(type: SearchFeedbackType): Locator {
+    return this.feedbackMessages[type];
   }
 
   /** Exact match: partial names collide (e.g. "Fiction" vs "Fiction EX"). */

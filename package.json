@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "End-to-end UI tests for the nopCommerce demo web shop (Playwright + TypeScript, Page Object Model)",
   "private": true,
+  "author": "Roman Nazarchuk",
   "license": "ISC",
   "type": "commonjs",
   "engines": {
