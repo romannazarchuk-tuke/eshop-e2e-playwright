@@ -1,0 +1,32 @@
+{
+  "addToCart": [
+    {
+      "id": "laptop",
+      "searchTerm": "laptop",
+      "expected": { "productName": "14.1-inch Laptop", "unitPrice": 1590 }
+    },
+    {
+      "id": "smartphone",
+      "searchTerm": "smartphone",
+      "expected": { "productName": "Smartphone", "unitPrice": 100 }
+    }
+  ],
+  "negativeSearch": [
+    {
+      "id": "unknown-term",
+      "searchTerm": "qwxzyplmk",
+      "expected": {
+        "messageType": "noResults",
+        "message": "No products were found that matched your criteria."
+      }
+    },
+    {
+      "id": "too-short-term",
+      "searchTerm": "ab",
+      "expected": {
+        "messageType": "warning",
+        "message": "Search term minimum length is 3 characters"
+      }
+    }
+  ]
+}
