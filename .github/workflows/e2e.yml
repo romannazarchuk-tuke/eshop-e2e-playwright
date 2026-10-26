@@ -1,0 +1,103 @@
+name: E2E tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Job-level so that a newer push cancels stale test runs but never an ongoing Pages deployment.
+    concurrency:
+      group: e2e-tests-${{ github.ref }}
+      cancel-in-progress: true
+    outputs:
+      report-generated: ${{ steps.report-check.outputs.generated }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm run format:check
+
+      - run: npx playwright install --with-deps chromium firefox
+
+      - run: npm test
+
+      # A failed lint/typecheck step skips the tests, so there may be no report to publish.
+      - name: Check whether the HTML report exists
+        id: report-check
+        if: always()
+        run: |
+          if [ -f playwright-report/index.html ]; then
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload traces and videos
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
+
+  deploy-report:
+    needs: test
+    # Publish the report even when tests fail: that is when it is needed most.
+    if: >-
+      always() &&
+      needs.test.result != 'cancelled' &&
+      needs.test.outputs.report-generated == 'true' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: playwright-report
+          path: playwright-report
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: playwright-report
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
