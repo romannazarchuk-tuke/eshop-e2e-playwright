@@ -33,7 +33,7 @@ Latest test report: https://romannazarchuk-tuke.github.io/eshop-e2e-playwright/
 │   │   ├── products.json           # Test cases (search terms and expected results)
 │   │   └── testData.ts             # zod schemas + typed, validated access to products.json
 │   ├── fixtures/
-│   │   └── test.ts                 # test.extend: injects page objects into tests
+│   │   └── test.ts                 # test.extend page objects + custom expect matchers
 │   ├── pages/
 │   │   ├── BasePage.ts             # Common navigation (goto + expectLoaded) and header
 │   │   ├── HomePage.ts
@@ -92,11 +92,11 @@ For every `addToCart` case:
 1. Open the home page and search for the term through the header.
 2. On the results page, read the price of the expected product tile and add it to the cart.
    The add-to-cart AJAX response must report success, the success notification must appear,
-   and the header counter must show `(1)`.
+   and the header cart counter must show quantity 1.
 3. Open the cart through the header.
 4. Assert that the cart contains exactly one line item with the expected name, quantity `1`
    and the expected unit price, that this price equals the price shown on the search results
-   tile, and that the header counter still shows `(1)`.
+   tile, and that the header cart counter still shows quantity 1.
 
 Comparing the cart price with both the tile and the test data catches two different defects:
 a price changed between catalog and cart, and a catalog price that no longer matches expectations.
@@ -109,34 +109,13 @@ For every `negativeSearch` case:
 2. Assert that the expected message is shown with its exact text and that no product tiles are
    rendered. Two kinds of feedback are covered: an unknown term ("No products were found that
    matched your criteria.") and a term shorter than 3 characters (minimum-length warning).
-3. Assert that the header counter shows `(0)`, open the cart and assert that the empty-cart
+3. Assert that the header cart counter shows quantity 0, open the cart and assert that the empty-cart
    message is visible, i.e. a failed search has no side effects on the cart.
 
 ## Test data
 
-`src/data/products.json` holds all cases:
-
-```json
-{
-  "addToCart": [
-    {
-      "id": "laptop",
-      "searchTerm": "laptop",
-      "expected": { "productName": "14.1-inch Laptop", "unitPrice": 1590 }
-    }
-  ],
-  "negativeSearch": [
-    {
-      "id": "unknown-term",
-      "searchTerm": "qwxzyplmk",
-      "expected": {
-        "messageType": "noResults",
-        "message": "No products were found that matched your criteria."
-      }
-    }
-  ]
-}
-```
+`src/data/products.json` holds all cases: `addToCart` (search term, expected product name and
+unit price) and `negativeSearch` (search term, expected message type and text).
 
 - Tests never import the JSON directly. They use `addToCartCases` / `negativeSearchCases` from
   `src/data/testData.ts`, which are typed from the zod schemas.
@@ -155,12 +134,13 @@ attributes redirect to the product page).
 
 `.github/workflows/e2e.yml` runs on pushes and pull requests to `main` and on manual dispatch.
 
-Job `test` (ubuntu-latest, 20 minute timeout):
+Job `test` (ubuntu-24.04, 20 minute timeout):
 
 1. `npm ci`, then `lint`, `typecheck` and `format:check`.
 2. Installs Chromium and Firefox with system dependencies and runs `npm test`
    (GitHub sets `CI=true`, which enables retries, 2 workers and the GitHub annotations reporter).
-3. Uploads the HTML report as artifact `playwright-report` (always, 14 days) and
+3. Uploads the HTML report as artifact `playwright-report` (whenever the tests produced one,
+   including failed runs; 14 days) and
    `test-results` with traces, screenshots and videos (only on failure).
 
 Job `deploy-report` publishes the HTML report to GitHub Pages for pushes to `main`. It also runs
@@ -184,6 +164,10 @@ Where to find the report:
 - **Fixtures.** `src/fixtures/test.ts` extends Playwright's `test` with page objects. Tests
   declare what they need (`async ({ homePage, cartPage }) => ...`) and never construct page
   objects themselves.
+- **Custom matcher.** `expect(page.header).toHaveCartQuantity(1)` is defined with `expect.extend`
+  in the same file. It delegates to `toHaveText`, so it retries like built-in matchers and
+  supports `.not`; the counter format `(N)` is known only to `HeaderComponent`, so tests assert
+  quantities, not markup.
 - **Data-driven tests.** One test definition per scenario, one generated test per data case.
 - **Locator strategy.** Interactive elements are located by role (`getByRole`), with
   `exact: true` for product names. CSS is used only where the markup offers no accessible
@@ -217,11 +201,7 @@ Where to find the report:
   immediately. On CI, 2 retries absorb slow responses of the shared public server and traces
   are recorded on the first retry; workers are fixed at 2 to match the runner's CPUs and to
   avoid overloading the demo server.
-- **Typed search feedback lookup.** `SearchResultsPage.searchFeedback(type)` maps a
-  `SearchFeedbackType` to its locator through a `Record`, so the negative test has no if/else
-  chain and future tests reuse the same lookup. The page object defines its own union type
-  instead of importing from the data layer; adding a `messageType` to the schema without
-  supporting it in the page object is a compile error at the call site.
+- **Typed search feedback lookup.** `searchFeedback(type)` maps each message type to its locator, so tests need no if/else.
 - **`toEqual` on cart line items.** The cart is server-rendered, so after the row is visible a
   single read is stable. One `toEqual` checks that there is exactly one line item and its name,
   numeric price and quantity, and shows a complete diff on failure. Visibility of the row and
@@ -234,7 +214,7 @@ Where to find the report:
   refuses the request. `addToCart` waits for the response, checks `success` in the JSON body and
   waits for the notification right after the click.
 - **Navigating before the cart is updated.** Opening the cart immediately after the click can
-  race with the AJAX request. The test asserts that the header counter shows `(1)` before
+  race with the AJAX request. The test asserts that the header cart counter shows quantity 1 before
   navigating.
 - **Inputs without labels.** The header search input has no label or placeholder (the "Search
   store" text is a value cleared by JavaScript), so it is located through its container.
