@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # Job-level so that a newer push cancels stale test runs but never an ongoing Pages deployment.
     concurrency:
@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Upload HTML report
-        if: always()
+        if: always() && steps.report-check.outputs.generated == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
@@ -76,7 +76,7 @@ jobs:
       needs.test.outputs.report-generated == 'true' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write
